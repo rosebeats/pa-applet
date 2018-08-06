@@ -23,8 +23,9 @@ static pa_mainloop_api *api;
 
 static gboolean subscribed = FALSE;
 static gboolean have_default_card_index = FALSE;
-static uint32_t default_card_index;
-static uint32_t default_sink_index;
+static uint32_t default_card_index=-1;
+static uint32_t default_sink_index =-1;
+const char *default_sink_name=NULL;
 static unsigned int default_sink_num_channels;
 
 static pa_operation *sink_reload_operation = NULL;
@@ -35,6 +36,8 @@ static gboolean try_connect(gpointer data);
 static void server_info_cb(pa_context *c, const pa_server_info *info, void *data);
 static void card_info_cb(pa_context *c, const pa_card_info *info, int eol, void *data);
 static void sink_info_cb(pa_context *c, const pa_sink_info *info, int eol, void *data);
+
+static GSList *sink_list = NULL;
 
 void pulse_glue_init(void)
 {
@@ -143,7 +146,7 @@ static void card_info_cb(pa_context *c, const pa_card_info *info, int eol, void 
     // Add the profiles to the audio status
     audio_status_reset_profiles();
     audio_status *as = shared_audio_status();
-    for (uint32_t i = 0; i < info->n_profiles; ++i) {
+    for (uint32_t i = 0; i < info->n_profiles; ++i) {//iterates over the profiles
         pa_card_profile_info *info_profile = &info->profiles[i];
         audio_status_profile *profile = g_malloc(sizeof(audio_status_profile));
         profile->name = g_strdup(info_profile->name);
@@ -244,10 +247,67 @@ static void server_info_cb(pa_context *c, const pa_server_info *info, void *data
     // Get the default sink info
     sink_reload_operation = pa_context_get_sink_info_by_name(context,
             info->default_sink_name, sink_info_cb, NULL);
+
+    default_sink_name = g_strdup(info->default_sink_name);//set default sink name so we can compare from the start
+
     if (!sink_reload_operation)
         g_printerr("pa_context_get_sink_info_by_name() failed\n");
     run_or_postpone_sink_reload();
 }
+
+static void test_sink_list (pa_context *c, const pa_sink_info *i, int eol, void *userdata){
+	// Check if this is the termination call
+	if (eol > 0)
+		return;
+
+	pa_sink_info *save= malloc(sizeof(pa_sink_info));
+	memcpy(save,i,sizeof(pa_sink_info));
+	save->name=g_strdup(i->name);//copy other wise only copying pointer...
+	g_print("Available sink: %s\n",save->name);
+	sink_list = g_slist_prepend (sink_list, save);
+
+}
+
+GSList *get_sinks(){
+	return sink_list;
+}
+void checkSuccess(pa_context *c, int success, void *userdata){
+	success?:g_printerr("Setting default failed!");
+}
+
+int is_default_sink(const char* sink){
+	if(!default_sink_name)
+		return FALSE;
+
+	if (!strcmp(default_sink_name, sink))
+		return TRUE;
+
+	return FALSE;
+}
+
+void set_sink(gchar *sink){
+	if(!context) return;//panic!!!
+	if(!sink_list) return;
+
+	pa_sink_info *sinkinfo;
+	 for (GSList *entry = get_sinks(); entry; entry = entry->next) {
+	    	sinkinfo =((pa_sink_info *)entry->data);
+	    	if (!strcmp(sinkinfo->name, sink)) {//if right sink is found by name
+	    		break;
+	    	}
+	    	sinkinfo=NULL;
+	    }
+	 if(!sinkinfo) return;
+
+	g_print("Setting %s as default.\n",sinkinfo->name);
+	pa_context_set_default_sink(context,sinkinfo->name, checkSuccess,NULL);//is it that easy?
+
+	default_sink_name = g_strdup(sinkinfo->name);
+	default_card_index = sinkinfo->card;
+	default_sink_index = sinkinfo->index;
+	default_sink_num_channels = sinkinfo->volume.channels;
+}
+
 
 static void context_state_cb(pa_context *c, void *data)
 {
@@ -271,9 +331,11 @@ static void context_state_cb(pa_context *c, void *data)
     // Now we only handle the ready state
     if (state != PA_CONTEXT_READY)
         return;
-
     // Start by getting the server information
-    pa_operation *oper = pa_context_get_server_info(context, server_info_cb, NULL);
+    pa_operation *oper = pa_context_get_server_info(context, server_info_cb, NULL);//only gets default sink :/
+
+    pa_context_get_sink_info_list(context, test_sink_list, NULL);//this lists the sinks!
+
     if (oper)
         pa_operation_unref(oper);
     else
@@ -288,6 +350,11 @@ static gboolean try_connect(gpointer data)
     context = pa_context_new_with_proplist(api, NULL, proplist);
     g_assert(context);
     pa_proplist_free(proplist);
+
+    if(sink_list!=NULL){//clears the device list so we dont have duplicates!
+		g_slist_free_full(sink_list, g_free);//should free everything
+		sink_list=NULL;//set the pointer NULL!
+	}
 
     // Connect the context state callback
     pa_context_set_state_callback(context, context_state_cb, NULL);

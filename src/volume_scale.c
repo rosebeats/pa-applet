@@ -31,7 +31,7 @@ static void on_scale_value_change(GtkRange *range, gpointer data)
     pulse_glue_sync_volume();
 }
 
-static void create_volume_scale(void)
+static void create_volume_scale(void)//left click menu
 {
     // Create a popup window
     window = gtk_window_new(GTK_WINDOW_POPUP);
@@ -87,7 +87,7 @@ static void do_show_volume_scale(GdkRectangle *rect_or_null)
         GdkRectangle monitor_rect;
         GdkScreen *screen = gtk_widget_get_screen(window);
         gint monitor = gdk_screen_get_monitor_at_point(screen, rect_or_null->x, rect_or_null->y);
-        gdk_screen_get_monitor_geometry(screen, monitor, &monitor_rect);
+        gdk_screen_get_monitor_geometry(screen, monitor, &monitor_rect);//TODO deprecations
 
         // If the Y position is outside the monitor rect, the tray is at the top
         if (y < monitor_rect.y) {
@@ -122,7 +122,7 @@ static void on_pointer_press(GtkWidget *widget, GdkEventButton *event, gpointer 
 
     // Ungrab it
     gdk_device_ungrab(device, GDK_CURRENT_TIME);
-    gdk_flush();
+    gdk_flush();//TODO deprecations
 }
 
 void show_volume_scale(GdkRectangle *rect_or_null)
@@ -143,7 +143,7 @@ void show_volume_scale(GdkRectangle *rect_or_null)
     g_signal_connect_after(G_OBJECT(window), "button_press_event", G_CALLBACK(on_pointer_press), NULL);
     gdk_device_grab(device, gtk_widget_get_window(window), GDK_OWNERSHIP_NONE,
             TRUE, GDK_BUTTON_PRESS_MASK, NULL, GDK_CURRENT_TIME);
-    gdk_flush();
+    gdk_flush();//TODO deprecations
 }
 
 static gboolean on_flash_timeout(gpointer data)
