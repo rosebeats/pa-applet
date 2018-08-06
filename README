@@ -1,7 +1,7 @@
 What has changed in revamp
 ============
 pa-applet-revamp has changed the right click behaviour of the applet, so you can quickly select a different default sink.
-It also includes the pull request (https://github.com/fernandotcl/pa-applet/pull/18) to set transient flags in the notification.
+It also includes the pull request #18 to set transient flags in the notification.
 Additionaly it fixes the notification text to display the right string on some notification managers like dunst.
 
 Thanks to the original author Fernando Tarlá Cardoso Lemos to make such a convenient tool.
