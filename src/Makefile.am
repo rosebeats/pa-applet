@@ -27,6 +27,7 @@ pa_applet_CPPFLAGS = \
     $(XLIB_CFLAGS)
 
 pa_applet_LDADD = \
+    -lm \
     $(GLIB_LIBS) \
     $(GTK3_LIBS) \
     $(LIBPULSE_LIBS) \
