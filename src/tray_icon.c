@@ -39,7 +39,7 @@ static void on_activate(GtkStatusIcon *status_icon, gpointer data)
     }
 
     // Show the volume scale
-    if (gtk_status_icon_is_embedded(tray_icon)) {
+    if (gtk_status_icon_is_embedded(tray_icon)) {//TODO deprecations
         GdkRectangle rect;
         gtk_status_icon_get_geometry(tray_icon, NULL, &rect, NULL);
         show_volume_scale(&rect);
@@ -74,7 +74,7 @@ static void on_scroll(GtkStatusIcon *status_icon, GdkEventScroll *event, gpointe
 
     // Inform the user by flashing the volume scale
     update_volume_scale();
-    if (gtk_status_icon_is_embedded(tray_icon)) {
+    if (gtk_status_icon_is_embedded(tray_icon)) {//TODO deprecations
         GdkRectangle rect;
         gtk_status_icon_get_geometry(tray_icon, NULL, &rect, NULL);
         flash_volume_scale(&rect);
@@ -117,7 +117,7 @@ static gboolean on_button_release(GtkStatusIcon *status_icon, GdkEventButton *ev
 
 void create_tray_icon(void)
 {
-    tray_icon = gtk_status_icon_new();
+    tray_icon = gtk_status_icon_new();//TODO deprecations
     g_signal_connect(G_OBJECT(tray_icon), "activate", G_CALLBACK(on_activate), NULL);
     g_signal_connect(G_OBJECT(tray_icon), "popup-menu", G_CALLBACK(on_menu), NULL);
     g_signal_connect(G_OBJECT(tray_icon), "scroll_event", G_CALLBACK(on_scroll), NULL);
@@ -157,14 +157,14 @@ void update_tray_icon(void)
     }
 
     // Update the icon name
-    gtk_status_icon_set_from_icon_name(tray_icon, icon_name);
+    gtk_status_icon_set_from_icon_name(tray_icon, icon_name);//TODO deprecations
 
     // Update the tooltip
     gsize buffer_size = (strlen(tooltip_text_format) + 5) * sizeof(gchar);
     gchar *tooltip_text = g_malloc0(buffer_size);
     if (tooltip_text) {
         g_snprintf(tooltip_text, buffer_size, tooltip_text_format, (int)(as->volume));
-        gtk_status_icon_set_tooltip_text(tray_icon, tooltip_text);
+        gtk_status_icon_set_tooltip_text(tray_icon, tooltip_text);//TODO deprecations
         g_free(tooltip_text);
     }
 

@@ -10,11 +10,14 @@
 #include <libnotify/notify.h>
 
 #include "audio_status.h"
+#include <math.h>
 
 #define PROGRAM_NAME "pa-applet"
 
 gboolean have_notifications = FALSE;
 NotifyNotification *notification = NULL;
+
+char volumeString[16];// length is a bit lower but better safe than sorry
 
 void notifications_init(void)
 {
@@ -59,21 +62,19 @@ void notifications_flash(void)
     audio_status *as = shared_audio_status();
     if (as->muted) {
         icon_name = "audio-volume-muted";
-    }
-    else {
-        if (as->volume < 100.0 / 3)
-            icon_name = "audio-volume-low";
-        else if (as->volume < 100.0 / 3 * 2)
-            icon_name = "audio-volume-medium";
-        else
-            icon_name = "audio-volume-high";
+    }else{
+    	icon_name=NULL;
     }
 
     // Update the notification volume
-    notify_notification_set_hint_int32(notification, "value", (gint)as->volume);
+    notify_notification_set_hint(notification, "value", g_variant_new_double(as->volume));
 
+    // Add transient flag
+    notify_notification_set_hint(notification, "transient", g_variant_new_int32(1));
+
+    sprintf(volumeString,"volume %d%%",(int)(round(as->volume)));
     // Update the notification icon
-    notify_notification_update(notification, PROGRAM_NAME, NULL, icon_name);
+    notify_notification_update(notification, volumeString, icon_name, icon_name);
 
     // Show the notification
     notify_notification_show(notification, NULL);
